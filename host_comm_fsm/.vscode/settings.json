@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "init_peripherals.h": "c"
+        "init_peripherals.h": "c",
+        "main.h": "c",
+        "stm32f4xx_hal.h": "c",
+        "stm32f4xx_hal_conf.h": "c"
     }
 }

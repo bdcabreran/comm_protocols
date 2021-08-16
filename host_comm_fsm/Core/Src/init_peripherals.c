@@ -3,6 +3,9 @@
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 
+extern void Error_Handler(void);
+
+
 UART_HandleTypeDef huart2;
 
 /**

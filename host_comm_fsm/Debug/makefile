@@ -11,6 +11,7 @@ RM := rm -rf
 -include sources.mk
 -include Drivers/STM32F4xx_HAL_Driver/Src/subdir.mk
 -include Core/Startup/subdir.mk
+-include Core/Src/API/subdir.mk
 -include Core/Src/subdir.mk
 -include subdir.mk
 -include objects.mk
@@ -50,6 +51,9 @@ default.size.stdout \
 OBJDUMP_LIST += \
 host_comm_fsm.list \
 
+OBJCOPY_HEX += \
+host_comm_fsm.hex \
+
 OBJCOPY_BIN += \
 host_comm_fsm.bin \
 
@@ -62,7 +66,7 @@ main-build: host_comm_fsm.elf secondary-outputs
 
 # Tool invocations
 host_comm_fsm.elf: $(OBJS) $(USER_OBJS) C:\Users\bayro\OneDrive\Documents\GitHub\comm_protocols\host_comm_fsm\STM32F411RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "host_comm_fsm.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\bayro\OneDrive\Documents\GitHub\comm_protocols\host_comm_fsm\STM32F411RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="host_comm_fsm.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "host_comm_fsm.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\bayro\OneDrive\Documents\GitHub\comm_protocols\host_comm_fsm\STM32F411RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="host_comm_fsm.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -76,6 +80,11 @@ host_comm_fsm.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
+host_comm_fsm.hex: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objcopy  -O ihex $(EXECUTABLES) "host_comm_fsm.hex"
+	@echo 'Finished building: $@'
+	@echo ' '
+
 host_comm_fsm.bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "host_comm_fsm.bin"
 	@echo 'Finished building: $@'
@@ -83,10 +92,10 @@ host_comm_fsm.bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 
 # Other Targets
 clean:
-	-$(RM) $(SIZE_OUTPUT)$(OBJDUMP_LIST)$(EXECUTABLES)$(OBJS)$(S_DEPS)$(S_UPPER_DEPS)$(C_DEPS)$(OBJCOPY_BIN) host_comm_fsm.elf
+	-$(RM) $(OBJCOPY_HEX)$(SIZE_OUTPUT)$(OBJDUMP_LIST)$(EXECUTABLES)$(OBJS)$(S_DEPS)$(S_UPPER_DEPS)$(C_DEPS)$(OBJCOPY_BIN) host_comm_fsm.elf
 	-@echo ' '
 
-secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_BIN)
+secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_HEX) $(OBJCOPY_BIN)
 
 fail-specified-linker-script-missing:
 	@echo 'Error: Cannot find the specified linker script. Check the linker settings in the build configuration.'
