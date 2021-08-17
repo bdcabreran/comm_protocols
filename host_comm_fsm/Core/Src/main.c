@@ -8,16 +8,10 @@
 #include "main.h"
 #include "init_peripherals.h"
 #include "stdio.h"
+#include "comm_driver.h"
 
 #define HEARTBEAT_PERIOD_MS (200)
 void heartbeat_handler(void);
-
-
-int __io_putchar(int ch)
-{
-  HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
-  return ch;
-}
 
 void print_startup_message(void)
 {
@@ -29,6 +23,9 @@ void print_startup_message(void)
 	printf("**************************************\r\n");
 }
 
+uint8_t rx_buff[1024];
+uint8_t tx_buff[512];
+
 /**
   * @brief  The application entry point.
   * @retval int
@@ -38,6 +35,13 @@ int main(void)
   /* MCU configuration */
   peripherals_init();
   print_startup_message();
+
+  host_comm_init(rx_buff, 1024, tx_buff, 512);
+  host_comm_transmit_it((uint8_t*)"hello world 1\r\n", 16);
+  host_comm_transmit_it((uint8_t*)"hello world 2\r\n", 16);
+  host_comm_transmit_it((uint8_t*)"hello world 3\r\n", 16);
+  host_comm_transmit_it((uint8_t*)"something happen with the wristband in ch6\r\n", 45);
+  host_comm_transmit_it((uint8_t*)"something happen with the wristband in ch12\r\n", 46);
 
   /* Infinite loop */
   while (1)
@@ -57,13 +61,6 @@ void heartbeat_handler(void)
   }
 }
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-{
-  if(huart->Instance == USART2)
-  {
-    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-  }
-}
 
 
 /**

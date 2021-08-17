@@ -1,0 +1,10 @@
+comm_driver.c:26:13:MX_USART2_UART_Init	8	static
+comm_driver.c:50:9:host_comm_init	24	static
+comm_driver.c:63:9:host_comm_get_rx_data_len	4	static
+comm_driver.c:69:9:host_comm_read_rx_data	16	static
+comm_driver.c:75:9:host_comm_fetch_rx_data	16	static
+comm_driver.c:81:9:host_comm_clear_rx_data	4	static
+comm_driver.c:87:9:host_comm_transmit	16	static
+comm_driver.c:92:9:host_comm_transmit_it	24	static
+comm_driver.c:115:6:HAL_UART_TxCpltCallback	24	static
+comm_driver.c:134:6:HAL_UART_RxCpltCallback	16	static

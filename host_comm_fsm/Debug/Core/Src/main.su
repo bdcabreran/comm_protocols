@@ -1,6 +1,4 @@
-main.c:16:5:__io_putchar	16	static
-main.c:22:6:print_startup_message	8	static
-main.c:36:5:main	8	static
-main.c:50:6:heartbeat_handler	8	static
-main.c:62:6:HAL_UART_TxCpltCallback	16	static
-main.c:75:6:Error_Handler	4	static,ignoring_inline_asm
+main.c:16:6:print_startup_message	8	static
+main.c:33:5:main	8	static
+main.c:54:6:heartbeat_handler	8	static
+main.c:70:6:Error_Handler	4	static,ignoring_inline_asm

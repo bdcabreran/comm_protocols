@@ -1,12 +1,9 @@
 #include "init_peripherals.h"
+#include "comm_driver.h"
 
 static void MX_GPIO_Init(void);
-static void MX_USART2_UART_Init(void);
-
 extern void Error_Handler(void);
-
-
-UART_HandleTypeDef huart2;
+extern void ITM_enable(void);
 
 /**
   * @brief System Clock Configuration
@@ -52,26 +49,7 @@ void SystemClock_Config(void)
   }
 }
 
-/**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART2_UART_Init(void)
-{
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-}
+
 
 /**
   * @brief GPIO Initialization Function
@@ -120,5 +98,7 @@ void peripherals_init(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART2_UART_Init();
+
+  /*Init ITM for debugging */
+  ITM_enable();
 }
