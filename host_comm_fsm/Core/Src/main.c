@@ -46,6 +46,15 @@ int main(void)
   /* Infinite loop */
   while (1)
   {
+    if (host_comm_get_rx_data_len() > 0)
+    {
+      uint8_t temp_buff[100];
+      uint8_t data_len = host_comm_get_rx_data_len();
+      host_comm_read_rx_data(temp_buff, data_len);
+      temp_buff[data_len] = '\0';
+
+      printf("data = [ %s ]\r\n", temp_buff);
+    }
 
     heartbeat_handler();
   }

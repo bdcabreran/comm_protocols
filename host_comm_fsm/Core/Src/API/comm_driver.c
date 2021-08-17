@@ -10,12 +10,17 @@
  */
 #include "comm_driver.h"
 
+extern void Error_Handler(void);
+
 /* Handle driver type used for host communication*/
 UART_HandleTypeDef huart2;
 
 /* Data buffer Control */
 static c_buff_handle_t cb_tx;
 static c_buff_handle_t cb_rx;
+
+/* Static Rx Data byte */
+static uint8_t rx_byte;
 
 
 /**
@@ -57,36 +62,41 @@ uint8_t host_comm_init(uint8_t *rx_buff, uint16_t rx_buff_len,
     cb_tx = circular_buff_init(tx_buff, tx_buff_len);
     cb_rx = circular_buff_init(rx_buff, rx_buff_len);
 
+    /*Start Reception of data*/
+    HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
+
     printf("comm driver info : uart2 initialized\r\n");
+
+    return 1;
 }
 
 uint8_t host_comm_get_rx_data_len(void)
 {
-
+    return circular_buff_get_data_len(cb_rx);
 }
 
 
 uint8_t host_comm_read_rx_data(uint8_t *data, uint8_t len)
 {
-
+    return circular_buff_read(cb_rx, data, len);
 }
 
 
 uint8_t host_comm_fetch_rx_data(uint8_t *data, uint8_t len)
 {
-
+    return circular_buff_fetch(cb_rx, data, len);
 }
 
 
 uint8_t host_comm_clear_rx_data(void)
 {
-
+    circular_buff_reset(cb_rx);
+    return 1;
 }
-
 
 uint8_t host_comm_transmit(uint8_t *data, uint8_t len)
 {
-
+    return HAL_UART_Transmit(&huart2, data, len, HAL_MAX_DELAY);
 }
 
 uint8_t host_comm_transmit_it(uint8_t *data, uint8_t len)
@@ -103,12 +113,12 @@ uint8_t host_comm_transmit_it(uint8_t *data, uint8_t len)
         }
         else
         {
-            printf("warning:\t uart busy\r\n");
+            printf("comm driver warning:\t uart busy\r\n");
             return 0;
         }
     }
 
-    printf("error:\t uart transmission error\r\n");
+    printf("comm driver error:\t circular buffer cannot write request\r\n");
     return 0;
 }
 
@@ -127,7 +137,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
         HAL_UART_Transmit_IT(&huart2, data_chunk, data_len);
     }
 
-    printf("info :\t irq uart tx complete\r\n");
+    printf("comm driver info:\t irq uart tx complete\r\n");
   }
 }
 
@@ -135,9 +145,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
     if(huart->Instance == USART2)
     {
+        /*Set Uart Data reception for next byte*/
+        HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
 
+        if(circular_buff_write(cb_rx, &rx_byte, 1) !=  CIRCULAR_BUFF_OK)
+        {
+            /*Reinit ring buffer*/
+            circular_buff_reset(cb_rx);
+        }
     }
-
 }
 
 
