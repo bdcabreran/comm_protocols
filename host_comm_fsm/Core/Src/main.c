@@ -37,24 +37,11 @@ int main(void)
   print_startup_message();
 
   host_comm_init(rx_buff, 1024, tx_buff, 512);
-  host_comm_transmit_it((uint8_t*)"hello world 1\r\n", 16);
-  host_comm_transmit_it((uint8_t*)"hello world 2\r\n", 16);
-  host_comm_transmit_it((uint8_t*)"hello world 3\r\n", 16);
-  host_comm_transmit_it((uint8_t*)"something happen with the wristband in ch6\r\n", 45);
-  host_comm_transmit_it((uint8_t*)"something happen with the wristband in ch12\r\n", 46);
+
 
   /* Infinite loop */
   while (1)
   {
-    if (host_comm_get_rx_data_len() > 0)
-    {
-      uint8_t temp_buff[100];
-      uint8_t data_len = host_comm_get_rx_data_len();
-      host_comm_read_rx_data(temp_buff, data_len);
-      temp_buff[data_len] = '\0';
-
-      printf("data = [ %s ]\r\n", temp_buff);
-    }
 
     heartbeat_handler();
   }

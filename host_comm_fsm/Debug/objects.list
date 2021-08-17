@@ -1,6 +1,7 @@
 "./Core/Src/API/circular_buffer.o"
 "./Core/Src/API/comm_driver.o"
 "./Core/Src/API/itm_debug.o"
+"./Core/Src/host_comm/protocol.o"
 "./Core/Src/init_peripherals.o"
 "./Core/Src/main.o"
 "./Core/Src/stm32f4xx_hal_msp.o"
