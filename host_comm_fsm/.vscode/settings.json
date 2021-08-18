@@ -5,6 +5,9 @@
         "stm32f4xx_hal.h": "c",
         "stm32f4xx_hal_conf.h": "c",
         "circular_buffer.h": "c",
-        "stm32f4xx.h": "c"
+        "stm32f4xx.h": "c",
+        "comm_driver.h": "c",
+        "stdbool.h": "c",
+        "host_comm_tx_queue.h": "c"
     }
 }
