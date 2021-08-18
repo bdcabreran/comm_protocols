@@ -6,18 +6,38 @@
  * @date 2021-08-17
  */
 #include "stdint.h"
+#include "stdio.h"
+
+#define MAX_PAYLOAD_SIZE	(256)
+
+/* 1 byte = 256 possible cmd/res/evt */
+#define CMD_START   (0x00)
+#define CMD_END     (0x55)
+#define EVT_START   (0x56)
+#define EVT_END     (0xAB)
+#define RES_START   (0xAC)
+#define RES_END     (0xFF)
+
+/* Host / Target IDs */
+#define TARGET_TO_HOST_DIR   (0xAA)
+#define HOST_TO_TARGET_DIR   (0xBB)
+
+/* Packet Format Sizes */
+#define PREAMBLE_SIZE_BYTES     sizeof(uint16_t)
+#define POSTAMBLE_SIZE_BYTES    sizeof(uint16_t)
+#define HEADER_SIZE_BYTES       sizeof(packet_header_t)
+#define CRC_SIZE_BYTES          sizeof(uint32_t)
 
 typedef struct
 {
-    typedef union
+    union
     {
         uint8_t cmd;
         uint8_t res;
         uint8_t evt;
     }type;
 
-    uint8_t  dest_id;
-    uint8_t  src_id;
+    uint8_t  dir;
     uint8_t  seq_num;
     uint16_t payload_len;
 
@@ -25,6 +45,7 @@ typedef struct
 
 typedef struct
 {
+	uint8_t data[MAX_PAYLOAD_SIZE];
 
 }packet_payload_t;
 
@@ -48,41 +69,47 @@ typedef struct
 /* Host Header Types */
 typedef enum 
 {
-    HOST_TO_TARGET_CMD_START = 0x00,
-    HOST_TO_TARGET_CMD_END = 0x55
+    HOST_TO_TARGET_CMD_START = CMD_START,
+    HOST_TO_TARGET_CMD_TURN_ON_LED,
+    HOST_TO_TARGET_CMD_TURN_OFF_LED,
+    HOST_TO_TARGET_CMD_GET_FW_VERSION,
+    HOST_TO_TARGET_CMD_END = CMD_END
 }host_to_target_cmd_t;
 
 typedef enum
 {
-    HOST_TO_TARGET_EVT_START = 0x56,
-    HOST_TO_TARGET_EVT_END = 0xAB
+    HOST_TO_TARGET_EVT_START = EVT_START,
+    HOST_TO_TARGET_EVT_END = EVT_END
 }host_to_target_evt_t;
 
 typedef enum
 {
-    HOST_TO_TARGET_RES_START = 0xAC,
-    HOST_TO_TARGET_RES_END = 0xFF
-}host_to_target_resp_t
+    HOST_TO_TARGET_RES_START = RES_START,
+    HOST_TO_TARGET_RES_END = RES_END
+}host_to_target_resp_t;
 
 
 /* Target Header Types*/
 typedef enum 
 {
-    TARGET_TO_HOST_CMD_START = 0x00,
-    TARGET_TO_HOST_CMD_END = 0x55
+    TARGET_TO_HOST_CMD_START = CMD_START,
+    TARGET_TO_HOST_CMD_END = CMD_END
 }target_to_host_cmd_t;
 
 typedef enum
 {
-    TARGET_TO_HOST_EVT_START = 0x56,
-    TARGET_TO_HOST_EVT_END = 0xAB
+    TARGET_TO_HOST_EVT_START = EVT_START,
+    TARGET_TO_HOST_EVT_HANDLER_ERROR,
+    TARGET_TO_HOST_EVT_END = EVT_END
 }target_to_host_evt_t;
 
 typedef enum
 {
-    TARGET_TO_HOST_RES_START = 0xAC,
-    TARGET_TO_HOST_RES_END = 0xFF
-}target_to_host_resp_t
-
+    TARGET_TO_HOST_RES_START = RES_START,
+    TARGET_TO_HOST_RES_LED_ON,
+    TARGET_TO_HOST_RES_LED_OFF,
+    TARGET_TO_HOST_RES_FW_VERSION,
+    TARGET_TO_HOST_RES_END = RES_END
+}target_to_host_resp_t;
 
 
