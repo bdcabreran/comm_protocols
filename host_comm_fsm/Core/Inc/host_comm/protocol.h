@@ -28,6 +28,10 @@
 #define HEADER_SIZE_BYTES       sizeof(packet_header_t)
 #define CRC_SIZE_BYTES          sizeof(uint32_t)
 
+/* Preamble / Postamble bytes */
+#define PREAMBLE              (0xFF7F)
+#define POSTAMBLE             (0xDEDF)
+
 typedef struct
 {
     union
@@ -38,7 +42,6 @@ typedef struct
     }type;
 
     uint8_t  dir;
-    uint8_t  seq_num;
     uint16_t payload_len;
 
 }packet_header_t;
@@ -100,6 +103,7 @@ typedef enum
 {
     TARGET_TO_HOST_EVT_START = EVT_START,
     TARGET_TO_HOST_EVT_HANDLER_ERROR,
+    TARGET_TO_HOST_EVT_PRINT_DBG_MSG,
     TARGET_TO_HOST_EVT_END = EVT_END
 }target_to_host_evt_t;
 

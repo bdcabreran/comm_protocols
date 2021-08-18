@@ -10,11 +10,8 @@
 #define HOST_COMM_TX_FSM
 
 #include "uart_driver.h"
-#include "stdbool.h"
 #include "time_event.h"
 #include "protocol.h"
-#include "assert.h"
-#include "circular_buffer.h"
 #include "host_comm_tx_queue.h"
 
 #define MAX_NUM_OF_TRANSFER_RETRIES (2)
@@ -86,14 +83,8 @@ typedef struct
  */
 typedef struct
 {
-    struct
-    {
-        uint8_t retry_cnt;                     /* counter for number of transmission retry */
-        packet_data_t packet;                  /* packet data to be transmitted */ 
-        tx_request_source_t req_src;           /* stores the process that made the transmission request */ 
-    } tx;
-    bool expected_ack;                         /* define if ack response from host is expected or not, 
-                                                 if not, no retransmission will be perform*/
+    uint8_t retry_cnt;          /* counter for number of transmission retry */
+    tx_request_t request;       /* tx request with the data to be transmitted */
 } host_tx_comm_iface_t;
 
 /**
@@ -116,7 +107,6 @@ void host_tx_comm_fsm_run(host_tx_comm_fsm_t* handle);
 void host_tx_comm_fsm_time_event_update(host_tx_comm_fsm_t *handle);
 void host_tx_comm_fsm_set_ext_event(host_tx_comm_fsm_t* handle, host_tx_comm_external_events_t event);
 uint8_t host_tx_comm_fsm_write_dbg_msg(host_tx_comm_fsm_t *handle, char *dbg_msg);
-
 
 /**
  * @}

@@ -56,7 +56,6 @@ static void clear_events(host_tx_comm_fsm_t* handle)
 
 static void host_tx_comm_fsm_set_next_state(host_tx_comm_fsm_t *handle, host_tx_comm_states_t next_state)
 {
-	assert(IS_HOST_TX_COMM_STATE(next_state));
 	handle->state = next_state;
     clear_events(handle);
 }
@@ -64,9 +63,8 @@ static void host_tx_comm_fsm_set_next_state(host_tx_comm_fsm_t *handle, host_tx_
 void host_tx_comm_fsm_init(host_tx_comm_fsm_t* handle)
 {
     /*Init interface*/
-    memset((uint8_t*)&handle->iface.tx.packet, 0, sizeof(packet_frame_t));
-    handle->iface.tx.c_buff = circular_buff_init((uint8_t*)&handle->iface.tx.buff, TX_CIRCULAR_BUFF_SIZE);
-    handle->iface.tx.retry_cnt = 0;
+    host_comm_tx_queue_init();
+    memset((uint8_t*)&handle->iface.request.packet, 0, sizeof(packet_frame_t));
 
     /*Clear events */
     clear_events(handle);
@@ -75,17 +73,19 @@ void host_tx_comm_fsm_init(host_tx_comm_fsm_t* handle)
     enter_seq_poll_pending_transfers(handle);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static void enter_seq_poll_pending_transfers(host_tx_comm_fsm_t *handle)
 {
 	host_tx_comm_dbg_msg("enter seq \t[ poll_pending_transfers ]\n\r");
 	host_tx_comm_fsm_set_next_state(handle, st_tx_comm_poll_pending_transfer);
-    handle->iface.tx.retry_cnt = 0;
+    handle->iface.retry_cnt = 0;
 }
 
 
 static void during_action_poll_pending_transfers(host_tx_comm_fsm_t *handle)
 {
-    if(circular_buff_get_data_len(handle->iface.tx.c_buff) > sizeof(packet_header_t))
+    if(host_comm_tx_queue_get_pending_transfers())
     {
         handle->event.internal = ev_int_tx_comm_pending_packet;
     }
@@ -94,12 +94,8 @@ static void during_action_poll_pending_transfers(host_tx_comm_fsm_t *handle)
 
 static void exit_action_poll_pending_transfers(host_tx_comm_fsm_t *handle)
 {
-  /*Read packet to transfer */
-    packet_frame_t *packet = &handle->iface.tx.packet;
-
-    circular_buff_read(handle->iface.tx.c_buff, (uint8_t*)&packet->header, sizeof(packet_header_t));
-    if(packet->header.payload_len)
-        circular_buff_read(handle->iface.tx.c_buff, (uint8_t*)&packet->payload, packet->header.payload_len);
+    /*Read packet to transfer */
+    host_comm_tx_queue_read_request(&handle->iface.request);
 }
 
 
@@ -138,7 +134,14 @@ static void enter_seq_transmit_packet(host_tx_comm_fsm_t *handle)
 
 static void entry_action_transmit_packet(host_tx_comm_fsm_t *handle)
 {
-    time_event_start(&handle->event.time.ack_timeout, MAX_ACK_TIMEOUT, false);
+    if(handle->iface.request.ack_response == true)
+    {
+        time_event_start(&handle->event.time.ack_timeout, MAX_ACK_TIMEOUT_MS);
+    }
+    else
+    {
+        handle->event.internal = ev_int_tx_comm_no_ack_required;
+    }
     tx_send_packet(handle);
 }
 
@@ -155,41 +158,76 @@ static bool transmit_packet_on_react(host_tx_comm_fsm_t *handle, const bool try_
 
     if (try_transition == true)
     {
-        if (handle->event.external == ev_ext_tx_comm_ack_received)
+        if ((handle->event.external == ev_ext_tx_comm_ack_received) |
+            (handle->event.internal == ev_int_tx_comm_no_ack_required))
         {
-            /*Exit action */
             exit_action_transmit_packet(handle);
-            /*Enter sequence */
             enter_seq_poll_pending_transfers(handle);
         }
+
         else if(handle->event.external == ev_ext_tx_comm_nack_received)
         {
-            /*Exit action */
             exit_action_transmit_packet(handle);
-            /*Enter sequence */
             enter_seq_transmit_packet(handle);
         }
+
         else if (time_event_is_raised(&handle->event.time.ack_timeout) == true)
         {
-            /*Exit action */
             exit_action_transmit_packet(handle);
 
             /*Enter sequence */
-            if (handle->iface.tx.retry_cnt++ >= MAX_NUM_OF_TRANSFER_RETRIES) 
+            if (handle->iface.retry_cnt++ >= MAX_NUM_OF_TRANSFER_RETRIES) 
                 enter_seq_poll_pending_transfers(handle);
             else
                 enter_seq_transmit_packet(handle);
         }
+
         else
             did_transition = false;
     }
     if ((did_transition) == (false))
     {
-        /*during action*/
-        during_action_poll_pending_transfers(handle);
+        
     }
     return did_transition;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief           calculate the CRC value of an specific frame.
+ * @param frame     pointer to frame to be processed.   
+ * @param len       length in bytes of the frame.
+ * @return uint8_t  return CRC value of the frame 
+ */
+static uint32_t frame_get_crc(uint8_t *frame, uint8_t frame_len)
+{
+
+}
+
+/**
+ * @brief              check if a calculated CRC value of a @frame of length @frame_len is equal to the expected
+ *                     CRC value @exp_crc
+ * @param frame        pointer to frame to be processed. 
+ * @param frame_len    length in bytes of the frame.
+ * @param exp_crc  expected CRC value of the frame. 
+ * @return uint8_t     returns 1 if the expected CRC value is equal to the calculated CRC of the frame.
+ */
+
+static uint8_t frame_check_crc(uint8_t *frame, uint8_t frame_len, uint32_t exp_crc)
+{
+    /*Get CRC value from frame */
+    uint8_t packet_crc = frame_get_crc(frame, frame_len);
+
+    /*Compare calculated CRC and buffer CRC */
+    if (packet_crc == exp_crc)
+        return 1;
+    else
+    	server_comm_dbg_message("crc error : crc [0x%X] != exp_crc [0x%X] \r\n", packet_crc, exp_crc);
+
+    return 0;
+}
+
 
 /**
  * @brief 
@@ -200,114 +238,69 @@ static bool transmit_packet_on_react(host_tx_comm_fsm_t *handle, const bool try_
  */
 static void tx_send_packet(host_tx_comm_fsm_t *handle)
 {
-    /*Pointer to packet */
-    uint8_t packet_offset = 0;
+   /* packet index to write bytes  */
     uint16_t preamble = PREAMBLE;
-    uint8_t  postamble = POSTAMBLE;
-    uint8_t temp_buff[PREAMBLE_SIZE + PACKET_HEADER_SIZE + PAYLOAD_BUFF_SIZE + CRC_SIZE + POSTAMBLE_SIZE] = {0};
+    uint16_t postamble = POSTAMBLE;
+    uint32_t crc = 0;
 
-    packet_frame_t *packet = &handle->iface.tx.packet;
+    packet_data_t *packet = &handle->iface.request.packet;
 
-    memcpy((uint8_t*)temp_buff, (uint8_t*)&preamble, PREAMBLE_SIZE);
-    packet_offset += PREAMBLE_SIZE;
+    /* Transmit preamble */
+    if (!uart_transmit_it((uint8_t *)&preamble, sizeof(preamble)))
+        return 0;
 
-    memcpy((uint8_t*)temp_buff + packet_offset, (uint8_t*)&packet->header, PACKET_HEADER_SIZE);
-    packet_offset += PACKET_HEADER_SIZE;
+    /* Start CRC calculation*/
+    crc = frame_get_crc((uint8_t *)&packet->header, HEADER_SIZE_BYTES);
 
-    if(packet->header.payload_len)
-    {
-        memcpy((uint8_t*)temp_buff + packet_offset, (uint8_t*)&packet->payload, packet->header.payload_len);
-        packet_offset += packet->header.payload_len;   
-    }
+    /* Transmit Header */
+    if (!uart_transmit_it((uint8_t *)&packet->header, HEADER_SIZE_BYTES))
+        return 0;
 
-    uint8_t crc = get_crc((uint8_t *)&packet->header, sizeof(packet_header_t));
-
+    /* If Payload  */
     if (packet->header.payload_len)
     {
-        crc ^= get_crc((uint8_t *)&packet->payload, packet->header.payload_len);
+        /*update CRC*/
+        crc ^= frame_get_crc((uint8_t *)&packet->payload, packet->header.payload_len);
+
+        /*Transmit payload*/
+        if (!uart_transmit_it((uint8_t *)&packet->payload, packet->header.payload_len))
+            return 0;
     }
 
-    memcpy((uint8_t*)temp_buff + packet_offset, (uint8_t*)&crc, CRC_SIZE);
-    packet_offset += CRC_SIZE;
+    /*Transmit CRC*/
+    if (!uart_transmit_it((uint8_t *)&crc, CRC_SIZE_BYTES))
+        return 0;
 
-    memcpy((uint8_t*)temp_buff + packet_offset, (uint8_t*)&postamble, POSTAMBLE_SIZE);
-    packet_offset += POSTAMBLE_SIZE;
+    /*Transmit Postamble*/
+    if (!uart_transmit_it((uint8_t *)&postamble, POSTAMBLE_SIZE_BYTES))
+        return 0;
 
-    /*Send Data*/
-    usb_vcp_transmit_data((char *)&temp_buff, packet_offset);
+    return 1;
 }
 
-uint8_t host_tx_comm_fsm_write_packet(host_tx_comm_fsm_t *handle, packet_frame_t *packet)
-{
-    /* Check frame identifier */
-    if (circular_buff_get_free_space(handle->iface.tx.c_buff) > PACKET_HEADER_SIZE + packet->header.payload_len)
-    {
-        if (packet->header.frame_id == TEST_JIG_TO_HOST)
-        {
-            /* Check if device is valid */
-            if (IS_VALID_DEVICE_ID(packet->header.device_id))
-            {
-                /*Check if request or command is in range*/
-                if (IS_JIG_TO_HOST_CMD(packet->header.cmd) || (IS_JIG_TO_HOST_RESP(packet->header.resp)))
-                {
-                    /*Write Data*/
-                    circular_buff_write(handle->iface.tx.c_buff, (uint8_t *)&packet->header, sizeof(packet_header_t));
 
-                    if (packet->header.payload_len)
-                        circular_buff_write(handle->iface.tx.c_buff, (uint8_t *)&packet->payload, packet->header.payload_len);
-                    return 1;
-                }
-            }
-        }
-    }
-
-    return 0;
-}
-
-uint8_t host_tx_comm_fsm_write_test_result(host_tx_comm_fsm_t *handle, ib_device_t device, ib_test_result_t *test_result)
-{
-	if (IS_VALID_DEVICE_ID(device) && IS_VALID_CHANNEL(test_result->channel))
-	{
-		/*form header*/
-		packet_frame_t packet_tx;
-		packet_tx.header.frame_id = TEST_JIG_TO_HOST;
-		packet_tx.header.device_id = device;
-		packet_tx.header.cmd = JIG_CMD_PRINT_TEST_RESULT;
-		packet_tx.header.payload_len = sizeof(test_result);
-		memcpy((uint8_t*)&packet_tx.payload, (uint8_t*)test_result, packet_tx.header.payload_len);
-		return host_tx_comm_fsm_write_packet(handle, &packet_tx);
-	}
-	return 0;
-}
-
-/**
- * @brief 
- * 
- * @param host_comm 
- * @param packet 
- * @return uint8_t 
- */
 
 uint8_t host_tx_comm_fsm_write_dbg_msg(host_tx_comm_fsm_t *handle, char *dbg_msg)
 {
 	/* Check frame identifier */
-	if (IS_VALID_DEVICE_ID(device) && dbg_msg != NULL)
+	if (dbg_msg != NULL)
 	{
 		/*form header*/
-		packet_frame_t packet_tx;
-		packet_tx.header.frame_id = TEST_JIG_TO_HOST;
-		packet_tx.header.device_id = device;
-		packet_tx.header.cmd = JIG_CMD_PRINT_DBG_MESSAGE;
-		packet_tx.header.payload_len = strlen(dbg_msg);
+		tx_request_t request;
+        request.ack_response = true;
+        request.src = TX_SRC_FW_USER;
+		request.packet.header.dir = TARGET_TO_HOST_DIR;
+		request.packet.header.type.evt = TARGET_TO_HOST_EVT_PRINT_DBG_MSG;
+		request.packet.header.payload_len = strlen(dbg_msg);
 
 		/*copy dbg message to payload*/
-        if(packet_tx.header.payload_len > 0 && packet_tx.header.payload_len < PAYLOAD_BUFF_SIZE)
-        {
-		    memcpy((uint8_t*)&packet_tx.payload, dbg_msg, packet_tx.header.payload_len);
-        }
+        if((request.packet.header.payload_len > 0) && (request.packet.header.payload_len < MAX_PAYLOAD_SIZE))
+		    memcpy((uint8_t*)&request.packet.payload, dbg_msg, request.packet.header.payload_len);
+        else
+            return 0;
 
 		/*Write Data*/
-        return host_tx_comm_fsm_write_packet(handle, &packet_tx);
+        return host_comm_tx_queue_write_request(&request);
 	}
 
 	return 0;
@@ -341,18 +334,6 @@ void host_tx_comm_fsm_run(host_tx_comm_fsm_t *handle)
 
 void host_tx_comm_fsm_set_ext_event(host_tx_comm_fsm_t* handle, host_tx_comm_external_events_t event)
 {
-    if(IS_HOST_TX_COMM_EVENT_EXT(event))
-    {
-    	handle->event.external = event;
-    }
-
+    handle->event.external = event;
 }
 
-static uint8_t get_crc(uint8_t *packet, uint8_t len)
-{
-	uint8_t crc = packet[0];
-	for (uint8_t counter = 1; counter < len; counter++) {
-		crc ^= packet[counter];
-	}
-	return crc;
-}

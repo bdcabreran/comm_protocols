@@ -34,24 +34,19 @@ typedef struct
 
 static host_comm_tx_queue_t tx_queue;
 
-/**
- * @brief  Initializes Tx communication queue to handle packet transmission read/write operations. 
- * 
- * @param tx_queue Pointer to a variable of type @tx_comm_queue_t Tx communication queue struct
- */
-void host_comm_tx_init_queue(void)
+
+void host_comm_tx_queue_init(void)
 {
     tx_queue.cb = circular_buff_init(tx_queue.buffer, TX_QUEUE_BUFF_SIZE);
     tx_queue.packet_cnt = 0;
 }
 
-/**
- * @brief Write packet in Tx communication queue
- * 
- * @param packet Pointer to a variable of type @packet_data_t packet to be write in queue.
- * @return uint8_t Returns 1 if the packet has been written successfully, return 0 otherwise.
- */
-uint8_t host_comm_write_request_in_tx_queue(tx_request_t *tx_request)
+size_t host_comm_tx_queue_get_pending_transfers(void)
+{
+    return tx_queue.packet_cnt;
+}
+
+uint8_t host_comm_tx_queue_write_request(tx_request_t *tx_request)
 {
     /* Temporal variable to check free space needed to write packet in tx queue */
     uint8_t packet_data_len = HEADER_SIZE_BYTES + tx_request->packet.header.payload_len;
@@ -75,14 +70,8 @@ uint8_t host_comm_write_request_in_tx_queue(tx_request_t *tx_request)
     }
 }
 
-/**
- * @brief  Read a packet from Tx communication queue and save it in packet pointer entry
- * 
- * @param request_src    Retrives the process source that solicitate the transmission 
- * @param packet         Pointer to a variable of type @packet_data_t, packet to be stored the data read from queue.
- * @return uint8_t       Returns 1 if there is an available packet to be read, returns 0 otherwise.
- */
-uint8_t host_comm_read_request_from_tx_queue(tx_request_t *tx_request)
+
+uint8_t host_comm_tx_queue_read_request(tx_request_t *tx_request)
 {
     if (tx_queue.packet_cnt > 0)
     {
@@ -100,19 +89,11 @@ uint8_t host_comm_read_request_from_tx_queue(tx_request_t *tx_request)
     }
 }
 
-/*
- * @brief               Fetch request packet header in Tx communication queue.
- * 
- * @param tx_queue            Pointer to a variable of type @tx_comm_queue_t Tx communication queue struct 
- * @param request_pkt_header  Pointer to a variable of type @gateway_to_wristband_header_t which contains the header parameters 
- *                            of a request packet to wristband. 
- * @return uint8_t            Returns 1 if there is an available packet to be fetch, returns 0 otherwise.
- */
-uint8_t host_comm_fetch_request_from_tx_queue(tx_request_t *tx_request)
+uint8_t host_comm_tx_queue_fetch_request(tx_request_t *tx_request)
 {
     if (tx_queue.packet_cnt > 0)
     {
-        circular_buff_fetch(tx_queue.cb, (uint8_t *)tx_request->src); 
+        circular_buff_fetch(tx_queue.cb, (uint8_t *)&tx_request->src, 1); 
         circular_buff_fetch(tx_queue.cb, (uint8_t *)&tx_request->packet.header, HEADER_SIZE_BYTES);
         circular_buff_fetch(tx_queue.cb, (uint8_t *)&tx_request->packet.payload, tx_request->packet.header.payload_len);
         return 1;

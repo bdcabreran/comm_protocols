@@ -1,5 +1,6 @@
-#include "init_peripherals.h"
-#include "comm_driver.h"
+#include "peripherals_init.h"
+
+#include "uart_driver.h"
 
 static void MX_GPIO_Init(void);
 extern void Error_Handler(void);
@@ -90,7 +91,7 @@ static void MX_GPIO_Init(void)
  */
 void peripherals_init(void)
 {
-      /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
   /* Configure the system clock */
@@ -98,6 +99,9 @@ void peripherals_init(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+
+  /* Init Uart */
+  uart_init();
 
   /*Init ITM for debugging */
   ITM_enable();

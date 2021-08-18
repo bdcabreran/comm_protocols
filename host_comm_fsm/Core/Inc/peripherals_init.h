@@ -1,5 +1,5 @@
-#ifndef INIT_PERIPHERALS_H
-#define INIT_PERIPHERALS_H
+#ifndef PERIPHERALS_INIT_H
+#define PERIPHERALS_INIT_H
 
 #include "stm32f4xx_hal.h"
 

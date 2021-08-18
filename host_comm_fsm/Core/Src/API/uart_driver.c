@@ -64,7 +64,7 @@ static void MX_USART2_UART_Init(void)
  * @param tx_buff buffer in stack reserved for data transmission
  * @return uint8_t 
  */
-uint8_t host_comm_init(void)
+uint8_t uart_init(void)
 {
     /*Init Uart device*/
     MX_USART2_UART_Init();
@@ -81,36 +81,36 @@ uint8_t host_comm_init(void)
     return 1;
 }
 
-uint8_t host_comm_get_rx_data_len(void)
+uint8_t uart_get_rx_data_len(void)
 {
     return circular_buff_get_data_len(driver_data.rx.c_buff);
 }
 
 
-uint8_t host_comm_read_rx_data(uint8_t *data, uint8_t len)
+uint8_t uart_read_rx_data(uint8_t *data, uint8_t len)
 {
     return circular_buff_read(driver_data.rx.c_buff, data, len);
 }
 
 
-uint8_t host_comm_fetch_rx_data(uint8_t *data, uint8_t len)
+uint8_t uart_fetch_rx_data(uint8_t *data, uint8_t len)
 {
     return circular_buff_fetch(driver_data.rx.c_buff, data, len);
 }
 
 
-uint8_t host_comm_clear_rx_data(void)
+uint8_t uart_clear_rx_data(void)
 {
     circular_buff_reset(driver_data.rx.c_buff);
     return 1;
 }
 
-uint8_t host_comm_transmit(uint8_t *data, uint8_t len)
+uint8_t uart_transmit(uint8_t *data, uint8_t len)
 {
     return HAL_UART_Transmit(&huart2, data, len, HAL_MAX_DELAY);
 }
 
-uint8_t host_comm_transmit_it(uint8_t *data, uint8_t len)
+uint8_t uart_transmit_it(uint8_t *data, uint8_t len)
 {
     /* Write data to circular buffer */
     if (circular_buff_write(driver_data.tx.c_buff, data, len) == CIRCULAR_BUFF_OK)

@@ -6,9 +6,8 @@
   */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "init_peripherals.h"
+#include "peripherals_init.h"
 #include "stdio.h"
-#include "comm_driver.h"
 
 #define HEARTBEAT_PERIOD_MS (200)
 void heartbeat_handler(void);
@@ -35,9 +34,6 @@ int main(void)
   /* MCU configuration */
   peripherals_init();
   print_startup_message();
-
-  host_comm_init(rx_buff, 1024, tx_buff, 512);
-
 
   /* Infinite loop */
   while (1)

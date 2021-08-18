@@ -25,6 +25,7 @@ typedef enum
 {
     TX_SRC_REQ_INVALID,
     TX_SRC_HOST_COMM_RX_FSM,
+    TX_SRC_FW_USER,
     TX_SRC_REQ_LAST
 }tx_request_source_t;
 
@@ -36,8 +37,10 @@ typedef struct
 
 }tx_request_t;
 
-uint8_t host_comm_write_request_in_tx_queue(tx_request_t *tx_request);
-uint8_t host_comm_read_request_from_tx_queue(tx_request_t *tx_request);
-uint8_t host_comm_fetch_request_from_tx_queue(tx_request_t *tx_request);
+void host_comm_tx_queue_init(void);
+size_t host_comm_tx_queue_get_pending_transfers(void);
+uint8_t host_comm_tx_queue_write_request(tx_request_t *tx_request);
+uint8_t host_comm_tx_queue_read_request(tx_request_t *tx_request);
+uint8_t host_comm_tx_queue_fetch_request(tx_request_t *tx_request);
 
 #endif
