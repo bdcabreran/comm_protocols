@@ -5,6 +5,9 @@
  * @version 0.1
  * @date 2021-08-17
  */
+#ifndef PROTOCOL_H
+#define PROTOCOL_H
+
 #include "stdint.h"
 #include "stdio.h"
 
@@ -56,7 +59,7 @@ typedef struct
 {
     packet_header_t  header;
     packet_payload_t payload;
-    
+
 }packet_data_t;
 
 typedef struct
@@ -69,8 +72,10 @@ typedef struct
 }packet_frame_t;
 
 
+/*##################################################################################################*/
+
 /* Host Header Types */
-typedef enum 
+typedef enum
 {
     HOST_TO_TARGET_CMD_START = CMD_START,
     HOST_TO_TARGET_CMD_TURN_ON_LED,
@@ -91,9 +96,10 @@ typedef enum
     HOST_TO_TARGET_RES_END = RES_END
 }host_to_target_resp_t;
 
+/*##################################################################################################*/
 
 /* Target Header Types*/
-typedef enum 
+typedef enum
 {
     TARGET_TO_HOST_CMD_START = CMD_START,
     TARGET_TO_HOST_CMD_END = CMD_END
@@ -116,4 +122,7 @@ typedef enum
     TARGET_TO_HOST_RES_END = RES_END
 }target_to_host_resp_t;
 
+/*##################################################################################################*/
 
+
+#endif
