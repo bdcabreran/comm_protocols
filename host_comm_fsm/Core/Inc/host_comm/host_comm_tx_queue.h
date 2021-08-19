@@ -33,7 +33,7 @@ typedef struct
 {
     tx_request_source_t src; /* process that request a transmission*/
     packet_data_t packet;     /* packet data to be transmitted */
-    bool ack_response;       /* ACK response expected ? */      
+    bool ack_expected;       /* ACK response expected ? */
 
 }tx_request_t;
 

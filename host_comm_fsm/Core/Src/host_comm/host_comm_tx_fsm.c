@@ -10,24 +10,26 @@
  */
 
 #include "host_comm_tx_fsm.h"
+#include "string.h"
 
 /*@brief Tx comm finite state machine object */
 host_tx_comm_fsm_t host_tx_comm_handle;
 
 
 /**@brief Enable/Disable debug messages */
-#define HOST_TX_FSM_DEBUG 0
-#define HOST_TX_FSM_TAG "host tx comm : "
+#define HOST_TX_FSM_DEBUG 1
+#define HOST_TX_FSM_TAG "host tx comm: "
 
 /**@brief uart debug function for server comm operations  */
 #if HOST_TX_FSM_DEBUG
-#define host_tx_comm_dbg_msg(format, ...) printf(HOST_TX_FSM_TAG format, ##__VA_ARGS__)
+#define host_tx_comm_dbg(format, ...) printf(HOST_TX_FSM_TAG format, ##__VA_ARGS__)
 #else
-#define host_tx_comm_dbg_msg(format, ...) \
+#define host_tx_comm_dbg(format, ...) \
     do                                    \
     { /* Do nothing */                    \
     } while (0)
 #endif
+
 
 /*Static functions for state poll pending transfers */
 static void enter_seq_poll_pending_transfers(host_tx_comm_fsm_t *handle);
@@ -42,9 +44,7 @@ static void exit_action_transmit_packet(host_tx_comm_fsm_t *handle);
 static bool transmit_packet_on_react(host_tx_comm_fsm_t *handle, const bool try_transition);
 
 /*Static methods of the finite state machine*/
-static void tx_send_packet(host_tx_comm_fsm_t *handle);
-static uint8_t get_crc(uint8_t *packet, uint8_t len);
-
+static uint8_t tx_send_packet(host_tx_comm_fsm_t *handle);
 
 static void clear_events(host_tx_comm_fsm_t* handle)
 {
@@ -77,7 +77,7 @@ void host_tx_comm_fsm_init(host_tx_comm_fsm_t* handle)
 
 static void enter_seq_poll_pending_transfers(host_tx_comm_fsm_t *handle)
 {
-	host_tx_comm_dbg_msg("enter seq \t[ poll_pending_transfers ]\n\r");
+	host_tx_comm_dbg("enter seq \t[ poll_pending_transfers ]\n");
 	host_tx_comm_fsm_set_next_state(handle, st_tx_comm_poll_pending_transfer);
     handle->iface.retry_cnt = 0;
 }
@@ -88,6 +88,7 @@ static void during_action_poll_pending_transfers(host_tx_comm_fsm_t *handle)
     if(host_comm_tx_queue_get_pending_transfers())
     {
         handle->event.internal = ev_int_tx_comm_pending_packet;
+        host_tx_comm_dbg("int event \t[ pending_packet ]\n");
     }
 }
 
@@ -127,20 +128,22 @@ static bool poll_pending_transfers_on_react(host_tx_comm_fsm_t *handle, const bo
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void enter_seq_transmit_packet(host_tx_comm_fsm_t *handle)
 {
-	host_tx_comm_dbg_msg("enter seq \t[ transmit_packet ]\n\r");
+	host_tx_comm_dbg("enter seq \t[ transmit_packet ]\n");
 	host_tx_comm_fsm_set_next_state(handle, st_tx_comm_transmit_packet);
     entry_action_transmit_packet(handle);
 }
 
 static void entry_action_transmit_packet(host_tx_comm_fsm_t *handle)
 {
-    if(handle->iface.request.ack_response == true)
+    if(handle->iface.request.ack_expected == true)
     {
         time_event_start(&handle->event.time.ack_timeout, MAX_ACK_TIMEOUT_MS);
+        host_tx_comm_dbg("time event \t[ ack resp time start ]\n");
     }
     else
     {
-        handle->event.internal = ev_int_tx_comm_no_ack_required;
+        handle->event.internal = ev_int_tx_comm_no_ack_expected;
+        host_tx_comm_dbg("int event \t[ ack no expected ]\n");
     }
     tx_send_packet(handle);
 }
@@ -159,7 +162,7 @@ static bool transmit_packet_on_react(host_tx_comm_fsm_t *handle, const bool try_
     if (try_transition == true)
     {
         if ((handle->event.external == ev_ext_tx_comm_ack_received) |
-            (handle->event.internal == ev_int_tx_comm_no_ack_required))
+            (handle->event.internal == ev_int_tx_comm_no_ack_expected))
         {
             exit_action_transmit_packet(handle);
             enter_seq_poll_pending_transfers(handle);
@@ -174,10 +177,14 @@ static bool transmit_packet_on_react(host_tx_comm_fsm_t *handle, const bool try_
         else if (time_event_is_raised(&handle->event.time.ack_timeout) == true)
         {
             exit_action_transmit_packet(handle);
+            host_tx_comm_dbg("time event \t[ ack resp timeout ]\n");
 
             /*Enter sequence */
-            if (handle->iface.retry_cnt++ >= MAX_NUM_OF_TRANSFER_RETRIES) 
+            if (handle->iface.retry_cnt++ >= MAX_NUM_OF_TRANSFER_RETRIES)
+            {
+                host_tx_comm_dbg("int event \t[ max tx retries ]\n");
                 enter_seq_poll_pending_transfers(handle);
+            }
             else
                 enter_seq_transmit_packet(handle);
         }
@@ -202,6 +209,7 @@ static bool transmit_packet_on_react(host_tx_comm_fsm_t *handle, const bool try_
  */
 static uint32_t frame_get_crc(uint8_t *frame, uint8_t frame_len)
 {
+	return 0xAAAABBBB;
 
 }
 
@@ -223,7 +231,7 @@ static uint8_t frame_check_crc(uint8_t *frame, uint8_t frame_len, uint32_t exp_c
     if (packet_crc == exp_crc)
         return 1;
     else
-    	server_comm_dbg_message("crc error : crc [0x%X] != exp_crc [0x%X] \r\n", packet_crc, exp_crc);
+    	host_tx_comm_dbg("crc error : crc [0x%X] != exp_crc [0x%X] \r\n", packet_crc, exp_crc);
 
     return 0;
 }
@@ -236,7 +244,7 @@ static uint8_t frame_check_crc(uint8_t *frame, uint8_t frame_len, uint32_t exp_c
  * @param packet 
  * @return uint8_t 
  */
-static void tx_send_packet(host_tx_comm_fsm_t *handle)
+static uint8_t tx_send_packet(host_tx_comm_fsm_t *handle)
 {
    /* packet index to write bytes  */
     uint16_t preamble = PREAMBLE;
@@ -280,14 +288,14 @@ static void tx_send_packet(host_tx_comm_fsm_t *handle)
 
 
 
-uint8_t host_tx_comm_fsm_write_dbg_msg(host_tx_comm_fsm_t *handle, char *dbg_msg)
+uint8_t host_tx_comm_fsm_write_dbg_msg(host_tx_comm_fsm_t *handle, char *dbg_msg, bool ack_expected)
 {
 	/* Check frame identifier */
 	if (dbg_msg != NULL)
 	{
 		/*form header*/
 		tx_request_t request;
-        request.ack_response = true;
+        request.ack_expected = ack_expected;
         request.src = TX_SRC_FW_USER;
 		request.packet.header.dir = TARGET_TO_HOST_DIR;
 		request.packet.header.type.evt = TARGET_TO_HOST_EVT_PRINT_DBG_MSG;
@@ -335,5 +343,11 @@ void host_tx_comm_fsm_run(host_tx_comm_fsm_t *handle)
 void host_tx_comm_fsm_set_ext_event(host_tx_comm_fsm_t* handle, host_tx_comm_external_events_t event)
 {
     handle->event.external = event;
+
+    /*debug*/
+    if(event == ev_ext_tx_comm_ack_received)
+        host_tx_comm_dbg("ext event\t [ack received ]\r\n");
+    else if (event == ev_ext_tx_comm_nack_received)
+        host_tx_comm_dbg("ext event\t [nack received]\r\n");
 }
 

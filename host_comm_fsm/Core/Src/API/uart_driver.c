@@ -12,6 +12,21 @@
 
 extern void Error_Handler(void);
 
+/**@brief Enable/Disable debug messages */
+#define UART_DRIVER_DEBUG 0
+#define UART_DRIVER_TAG "uart driver : "
+
+/**@brief uart debug function for server comm operations  */
+#if UART_DRIVER_DEBUG
+#define uart_driver_dbg(format, ...) printf(UART_DRIVER_TAG format, ##__VA_ARGS__)
+#else
+#define uart_driver_dbg(format, ...) \
+    do                                    \
+    { /* Do nothing */                    \
+    } while (0)
+#endif
+
+
 /* Handle driver type used for host communication*/
 UART_HandleTypeDef huart2;
 
@@ -76,7 +91,7 @@ uint8_t uart_init(void)
     /*Start Reception of data*/
     HAL_UART_Receive_IT(&huart2, &uart_data.rx.byte, 1);
 
-    printf("comm driver info : uart2 initialized\r\n");
+    uart_driver_dbg("comm driver info : uart2 initialized\r\n");
 
     return 1;
 }
@@ -120,17 +135,17 @@ uint8_t uart_transmit_it(uint8_t *data, uint8_t len)
             uint8_t byte;
             circular_buff_get(uart_data.tx.cb, &byte);
             HAL_UART_Transmit_IT(&huart2, &byte, 1);
-            return 1;
         }
         else
         {
-            printf("comm driver warning:\t uart busy\r\n");
-            return 0;
+            uart_driver_dbg("comm driver warning:\t uart busy\r\n");
         }
+
+        return 1;
     }
 
-    printf("comm driver error:\t circular buffer cannot write request\r\n");
-    return 0;
+    uart_driver_dbg("comm driver error:\t circular buffer cannot write request\r\n");
+	return 0;
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
@@ -148,7 +163,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
         HAL_UART_Transmit_IT(&huart2, data_chunk, data_len);
     }
 
-    printf("comm driver info:\t irq uart tx complete\r\n");
+    uart_driver_dbg("comm driver info:\t irq uart tx complete\r\n");
   }
 }
 

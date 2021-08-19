@@ -9,6 +9,7 @@
         "comm_driver.h": "c",
         "stdbool.h": "c",
         "host_comm_tx_queue.h": "c",
-        "uart_driver.h": "c"
+        "uart_driver.h": "c",
+        "host_comm_tx_fsm.h": "c"
     }
 }

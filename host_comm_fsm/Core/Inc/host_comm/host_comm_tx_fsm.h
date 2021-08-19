@@ -39,7 +39,7 @@ typedef enum
 {
     ev_int_tx_comm_invalid,
     ev_int_tx_comm_pending_packet,
-    ev_int_tx_comm_no_ack_required,
+    ev_int_tx_comm_no_ack_expected,
     ev_int_tx_comm_last,
 }host_tx_comm_internal_events_t;
 
@@ -106,7 +106,7 @@ void host_tx_comm_fsm_run(host_tx_comm_fsm_t* handle);
 
 void host_tx_comm_fsm_time_event_update(host_tx_comm_fsm_t *handle);
 void host_tx_comm_fsm_set_ext_event(host_tx_comm_fsm_t* handle, host_tx_comm_external_events_t event);
-uint8_t host_tx_comm_fsm_write_dbg_msg(host_tx_comm_fsm_t *handle, char *dbg_msg);
+uint8_t host_tx_comm_fsm_write_dbg_msg(host_tx_comm_fsm_t *handle, char *dbg_msg,bool ack_expected);
 
 /**
  * @}

@@ -35,6 +35,12 @@
 #define PREAMBLE              (0xFF7F)
 #define POSTAMBLE             (0xDEDF)
 
+typedef enum
+{
+    HOST_TO_TARGET,
+    TARGET_TO_HOST,
+}packet_dir_t;
+
 typedef struct
 {
     union
@@ -44,7 +50,7 @@ typedef struct
         uint8_t evt;
     }type;
 
-    uint8_t  dir;
+    packet_dir_t  dir;
     uint16_t payload_len;
 
 }packet_header_t;

@@ -7,10 +7,14 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "peripherals_init.h"
+#include "host_comm_tx_fsm.h"
 #include "stdio.h"
+
+#include "uart_driver.h"
 
 #define HEARTBEAT_PERIOD_MS (200)
 void heartbeat_handler(void);
+
 
 void print_startup_message(void)
 {
@@ -35,10 +39,16 @@ int main(void)
   peripherals_init();
   print_startup_message();
 
+  /* init host tx fsm*/
+  host_tx_comm_fsm_init(&host_tx_comm_handle);
+
+  host_tx_comm_fsm_write_dbg_msg(&host_tx_comm_handle, "first debug msg\r\n", true);
+  host_tx_comm_fsm_write_dbg_msg(&host_tx_comm_handle, "second debug msg\r\n", false);
+  
   /* Infinite loop */
   while (1)
   {
-
+    host_tx_comm_fsm_run(&host_tx_comm_handle);
     heartbeat_handler();
   }
 }
