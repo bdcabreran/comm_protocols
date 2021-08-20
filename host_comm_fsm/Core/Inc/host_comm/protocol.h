@@ -57,7 +57,7 @@ typedef struct
 
 typedef struct
 {
-	uint8_t data[MAX_PAYLOAD_SIZE];
+	uint8_t buffer[MAX_PAYLOAD_SIZE];
 
 }packet_payload_t;
 
@@ -99,6 +99,8 @@ typedef enum
 typedef enum
 {
     HOST_TO_TARGET_RES_START = RES_START,
+    HOST_TO_TARGET_RES_ACK,
+    HOST_TO_TARGET_RES_NACK,
     HOST_TO_TARGET_RES_END = RES_END
 }host_to_target_resp_t;
 
@@ -122,6 +124,8 @@ typedef enum
 typedef enum
 {
     TARGET_TO_HOST_RES_START = RES_START,
+    TARGET_TO_HOST_RES_ACK,
+    TARGET_TO_HOST_RES_NACK,
     TARGET_TO_HOST_RES_LED_ON,
     TARGET_TO_HOST_RES_LED_OFF,
     TARGET_TO_HOST_RES_FW_VERSION,
@@ -129,6 +133,8 @@ typedef enum
 }target_to_host_resp_t;
 
 /*##################################################################################################*/
+void print_buff_ascii(uint8_t *buff, size_t len);
+void print_buff_hex(uint8_t *buff, size_t len);
 
 
 #endif

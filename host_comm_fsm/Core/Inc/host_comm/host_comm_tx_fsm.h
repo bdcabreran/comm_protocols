@@ -25,11 +25,11 @@
  */
 typedef enum
 {
-    st_tx_comm_invalid,
-    st_tx_comm_poll_pending_transfer,
-    st_tx_comm_transmit_packet,
-    st_tx_comm_last
-}host_tx_comm_states_t;
+    st_comm_tx_invalid,
+    st_comm_tx_poll_pending_transfer,
+    st_comm_tx_transmit_packet,
+    st_comm_tx_last
+}host_comm_tx_states_t;
 
 /**
  * @brief Enumeration list for internal events 
@@ -37,11 +37,11 @@ typedef enum
  */
 typedef enum 
 {
-    ev_int_tx_comm_invalid,
-    ev_int_tx_comm_pending_packet,
-    ev_int_tx_comm_no_ack_expected,
-    ev_int_tx_comm_last,
-}host_tx_comm_internal_events_t;
+    ev_int_comm_tx_invalid,
+    ev_int_comm_tx_pending_packet,
+    ev_int_comm_tx_no_ack_expected,
+    ev_int_comm_tx_last,
+}host_comm_tx_internal_events_t;
 
 /**
  * @brief Enumeration list for external events 
@@ -49,11 +49,11 @@ typedef enum
  */
 typedef enum 
 {
-    ev_ext_tx_comm_invalid,
-    ev_ext_tx_comm_ack_received,
-    ev_ext_tx_comm_nack_received,
-    ev_ext_tx_comm_last,
-}host_tx_comm_external_events_t;
+    ev_ext_comm_tx_invalid,
+    ev_ext_comm_tx_ack_received,
+    ev_ext_comm_tx_nack_received,
+    ev_ext_comm_tx_last,
+}host_comm_tx_external_events_t;
 
 
 /**
@@ -63,7 +63,7 @@ typedef enum
 typedef struct 
 {
     time_event_t ack_timeout;
-}host_tx_comm_time_events_t;
+}host_comm_tx_time_events_t;
 
 
 /**
@@ -72,10 +72,10 @@ typedef struct
  */
 typedef struct
 {
-    host_tx_comm_internal_events_t internal;
-    host_tx_comm_external_events_t external;
-    host_tx_comm_time_events_t     time;
-}host_tx_comm_events_t;
+    host_comm_tx_internal_events_t internal;
+    host_comm_tx_external_events_t external;
+    host_comm_tx_time_events_t     time;
+}host_comm_tx_events_t;
 
 /**
  * @brief Control Variables and Functions necessary to perform actions in the state machine
@@ -85,7 +85,7 @@ typedef struct
 {
     uint8_t retry_cnt;          /* counter for number of transmission retry */
     tx_request_t request;       /* tx request with the data to be transmitted */
-} host_tx_comm_iface_t;
+} host_comm_tx_iface_t;
 
 /**
  * @brief Struct definition for host tx communication state machine
@@ -93,20 +93,24 @@ typedef struct
  */
 typedef struct
 {
-	host_tx_comm_states_t    state;	
-    host_tx_comm_events_t    event;
-    host_tx_comm_iface_t     iface;
-} host_tx_comm_fsm_t;
+	host_comm_tx_states_t    state;	
+    host_comm_tx_events_t    event;
+    host_comm_tx_iface_t     iface;
+} host_comm_tx_fsm_t;
 
-extern host_tx_comm_fsm_t host_tx_comm_handle;
+extern host_comm_tx_fsm_t host_comm_tx_handle;
 
 /**@Exported Functions*/
-void host_tx_comm_fsm_init(host_tx_comm_fsm_t* handle);
-void host_tx_comm_fsm_run(host_tx_comm_fsm_t* handle);
+void host_comm_tx_fsm_init(host_comm_tx_fsm_t* handle);
+void host_comm_tx_fsm_run(host_comm_tx_fsm_t* handle);
+void host_comm_tx_fsm_time_event_update(host_comm_tx_fsm_t *handle);
+void host_comm_tx_fsm_set_ext_event(host_comm_tx_fsm_t* handle, host_comm_tx_external_events_t event);
 
-void host_tx_comm_fsm_time_event_update(host_tx_comm_fsm_t *handle);
-void host_tx_comm_fsm_set_ext_event(host_tx_comm_fsm_t* handle, host_tx_comm_external_events_t event);
-uint8_t host_tx_comm_fsm_write_dbg_msg(host_tx_comm_fsm_t *handle, char *dbg_msg,bool ack_expected);
+/**@Miscellaneous */
+void crc32_accumulate(uint32_t *buff, size_t len, uint32_t *crc_value);
+uint8_t host_comm_tx_fsm_write_dbg_msg(host_comm_tx_fsm_t *handle, char *dbg_msg, bool ack_expected);
+uint8_t host_comm_tx_fsm_send_packet_no_payload(host_comm_tx_fsm_t *handle, uint8_t type, bool ack_expected);
+
 
 /**
  * @}
@@ -118,7 +122,7 @@ uint8_t host_tx_comm_fsm_write_dbg_msg(host_tx_comm_fsm_t *handle, char *dbg_msg
         char buff[DBG_MSG_BUFF_SIZE];                                       \
         size_t len = sprintf(buff, format, ##__VA_ARGS__);                  \
         buff[len] = '\0';                                                   \
-        host_tx_comm_fsm_write_dbg_msg(&host_tx_comm_handle, buff);         \
+        host_comm_tx_fsm_write_dbg_msg(&host_comm_tx_handle, buff);         \
     } while (0)
 
 #endif

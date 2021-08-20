@@ -95,7 +95,8 @@ uint8_t host_comm_tx_queue_fetch_request(tx_request_t *tx_request)
 {
     if (tx_queue.packet_cnt > 0)
     {
-        circular_buff_fetch(tx_queue.cb, (uint8_t *)&tx_request->src, 1); 
+        circular_buff_fetch(tx_queue.cb, (uint8_t *)&tx_request->src, 1);
+        circular_buff_fetch(tx_queue.cb, (uint8_t *)&tx_request->ack_expected, 1);
         circular_buff_fetch(tx_queue.cb, (uint8_t *)&tx_request->packet.header, HEADER_SIZE_BYTES);
         circular_buff_fetch(tx_queue.cb, (uint8_t *)&tx_request->packet.payload, tx_request->packet.header.payload_len);
         return 1;

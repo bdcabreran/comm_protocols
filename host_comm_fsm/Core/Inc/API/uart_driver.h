@@ -15,5 +15,6 @@ uint8_t uart_fetch_rx_data(uint8_t *data, uint8_t len);
 uint8_t uart_clear_rx_data(void);
 uint8_t uart_transmit(uint8_t *data, uint8_t len);
 uint8_t uart_transmit_it(uint8_t *data, uint8_t len);
+uint8_t uart_write_rx_data(uint8_t *data, uint8_t len);
 
 #endif

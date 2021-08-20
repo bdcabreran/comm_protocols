@@ -26,6 +26,7 @@ typedef enum
     TX_SRC_REQ_INVALID,
     TX_SRC_HOST_COMM_RX_FSM,
     TX_SRC_FW_USER,
+    TX_SRC_RX_FSM,
     TX_SRC_REQ_LAST
 }tx_request_source_t;
 

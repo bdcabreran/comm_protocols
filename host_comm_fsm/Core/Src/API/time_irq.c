@@ -2,6 +2,7 @@
 #include "time_event.h"
 #include "stm32f4xx_hal.h"
 #include "host_comm_tx_fsm.h"
+#include "host_comm_rx_fsm.h"
 
 /**
  * @brief Systick Callback Function 
@@ -10,6 +11,7 @@
 void HAL_SYSTICK_Callback(void)
 {
     /* update FSM time events*/
-    host_tx_comm_fsm_time_event_update(&host_tx_comm_handle);
+    host_comm_tx_fsm_time_event_update(&host_comm_tx_handle);
+    host_comm_rx_fsm_time_event_update(&host_comm_rx_handle);
 
 }

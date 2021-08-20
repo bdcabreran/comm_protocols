@@ -3,8 +3,6 @@
 
 #include "stm32f4xx_hal.h"
 
-extern UART_HandleTypeDef huart2;
-
 /* Private defines -----------------------------------------------------------*/
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
