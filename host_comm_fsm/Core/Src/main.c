@@ -46,7 +46,7 @@ int main(void)
   host_comm_rx_fsm_init(&host_comm_rx_handle);
 
   /* run tdd #0*/
-  rx_comm_test_1();
+  tx_comm_test_0();
 
   /* Infinite loop */
   while (1)

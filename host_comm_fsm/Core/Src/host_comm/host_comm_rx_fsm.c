@@ -1,7 +1,7 @@
 #include "host_comm_rx_fsm.h"
 
 /**@brief Enable/Disable debug messages */
-#define HOST_RX_DEBUG 1
+#define HOST_RX_DEBUG 0
 #define HOST_RX_TAG "host rx comm : "
 
 /**@brief uart debug function for server comm operations  */

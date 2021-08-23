@@ -131,4 +131,21 @@ void rx_comm_test_1(void)
                     0x6F, 0x30, 0x57, 0xDE, 0x68, 0x6F, 0x55, 0xBB, 0x55, 0xBB};
 
   uart_write_rx_data(buff2, 21); /*<! Packet ready expected */
+
+  
+  uint8_t buff4[] = {0x32, 0xAA, 0x12, 0x54, 0x23, 0xFF, 0x01, 0x30, 0x64, 0x65, 0x6D,
+                    0x6F, 0x30, 0x57, 0xDE, 0x15, 0x6F, 0x55, 0x20, 0x55, 0xBB};
+
+  uart_write_rx_data(buff4, 21); /*<! Noise, Nothing expected*/
+
+}
+
+void tx_comm_test_0(void)
+{
+    /*Send Debug message with ACK response expected */
+    host_comm_tx_fsm_write_dbg_msg(&host_comm_tx_handle, "This is a debug message #1, ACK expected\r\n", true);
+
+    /*Send Debug message with no ACK response expected */
+    host_comm_tx_fsm_write_dbg_msg(&host_comm_tx_handle, "This is a debug message #2, no ACK expected\r\n", false);
+
 }

@@ -11,7 +11,7 @@
 #include "host_comm_tx_queue.h"
 
 /*Enable/Disable Debug messages*/
-#define HOST_COMM_TX_DEBUG 0
+#define HOST_COMM_TX_DEBUG 1
 #define HOST_COMM_TX_TAG "tx queue: "
 
 /**@brief uart debug function for Tx comm operations  */
@@ -50,7 +50,6 @@ uint8_t host_comm_tx_queue_write_request(tx_request_t *tx_request)
 {
     /* Temporal variable to check free space needed to write packet in tx queue */
     uint8_t packet_data_len = HEADER_SIZE_BYTES + tx_request->packet.header.payload_len;
-
 
     if (circular_buff_get_free_space(tx_queue.cb) > packet_data_len + 1) //include byte for req src 
     {

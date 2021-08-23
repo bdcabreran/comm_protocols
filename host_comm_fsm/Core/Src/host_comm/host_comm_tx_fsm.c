@@ -17,7 +17,7 @@ host_comm_tx_fsm_t host_comm_tx_handle;
 
 
 /**@brief Enable/Disable debug messages */
-#define HOST_TX_FSM_DEBUG 0
+#define HOST_TX_FSM_DEBUG 1
 #define HOST_TX_FSM_TAG "host tx comm: "
 
 /**@brief uart debug function for server comm operations  */
@@ -178,11 +178,12 @@ static bool transmit_packet_on_react(host_comm_tx_fsm_t *handle, const bool try_
         {
             exit_action_transmit_packet(handle);
             host_comm_tx_dbg("time event \t[ ack resp timeout ]\n");
+            host_comm_tx_dbg("tx retry\t : #%d\n",handle->iface.retry_cnt);
 
             /*Enter sequence */
             if (handle->iface.retry_cnt++ >= MAX_NUM_OF_TRANSFER_RETRIES)
             {
-                host_comm_tx_dbg("guard \t[ max tx retries ]\n");
+                host_comm_tx_dbg("guard \t[ max tx retries ->%d]\n", MAX_NUM_OF_TRANSFER_RETRIES);
                 enter_seq_poll_pending_transfers(handle);
             }
             else
@@ -221,14 +222,12 @@ void crc32_accumulate(uint32_t *buff, size_t len, uint32_t *crc_value)
 static uint8_t tx_send_packet(host_comm_tx_fsm_t *handle)
 {
    /* packet index to write bytes  */
-    uint16_t preamble = PREAMBLE;
-    uint16_t postamble = POSTAMBLE;
     uint32_t crc = 0;
 
     packet_data_t *packet = &handle->iface.request.packet;
 
     /* Transmit preamble */
-    if (!uart_transmit_it((uint8_t *)&preamble, sizeof(preamble)))
+    if (!uart_transmit_it((uint8_t *)&protocol_preamble.bit, PREAMBLE_SIZE_BYTES))
         return 0;
 
     /* Start CRC calculation*/
@@ -254,7 +253,7 @@ static uint8_t tx_send_packet(host_comm_tx_fsm_t *handle)
         return 0;
 
     /*Transmit Postamble*/
-    if (!uart_transmit_it((uint8_t *)&postamble, POSTAMBLE_SIZE_BYTES))
+    if (!uart_transmit_it((uint8_t *)&protocol_postamble.bit, POSTAMBLE_SIZE_BYTES))
         return 0;
 
     return 1;
@@ -282,7 +281,7 @@ uint8_t host_comm_tx_fsm_write_dbg_msg(host_comm_tx_fsm_t *handle, char *dbg_msg
             return 0;
 
 		/*Write Data*/
-        print_buff_hex((uint8_t*)&request.packet, HEADER_SIZE_BYTES + request.packet.header.payload_len);
+        //print_buff_hex((uint8_t*)&request.packet, HEADER_SIZE_BYTES + request.packet.header.payload_len);
         return host_comm_tx_queue_write_request(&request);
 	}
 

@@ -9,10 +9,10 @@ host_comm_tx_fsm.c:129:13:enter_seq_transmit_packet	16	static
 host_comm_tx_fsm.c:136:13:entry_action_transmit_packet	16	static
 host_comm_tx_fsm.c:151:13:exit_action_transmit_packet	16	static
 host_comm_tx_fsm.c:157:13:transmit_packet_on_react	24	static
-host_comm_tx_fsm.c:204:6:crc32_accumulate	32	static
-host_comm_tx_fsm.c:221:16:tx_send_packet	32	static
-host_comm_tx_fsm.c:265:9:host_comm_tx_fsm_write_dbg_msg	288	static
-host_comm_tx_fsm.c:292:9:host_comm_tx_fsm_send_packet_no_payload	280	static
-host_comm_tx_fsm.c:308:6:host_comm_tx_fsm_time_event_update	24	static
-host_comm_tx_fsm.c:318:6:host_comm_tx_fsm_run	16	static
-host_comm_tx_fsm.c:333:6:host_comm_tx_fsm_set_ext_event	16	static
+host_comm_tx_fsm.c:205:6:crc32_accumulate	32	static
+host_comm_tx_fsm.c:222:16:tx_send_packet	24	static
+host_comm_tx_fsm.c:264:9:host_comm_tx_fsm_write_dbg_msg	288	static
+host_comm_tx_fsm.c:291:9:host_comm_tx_fsm_send_packet_no_payload	280	static
+host_comm_tx_fsm.c:307:6:host_comm_tx_fsm_time_event_update	24	static
+host_comm_tx_fsm.c:317:6:host_comm_tx_fsm_run	16	static
+host_comm_tx_fsm.c:332:6:host_comm_tx_fsm_set_ext_event	16	static

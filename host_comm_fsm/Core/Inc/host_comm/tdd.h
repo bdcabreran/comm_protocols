@@ -16,7 +16,9 @@
 #include "host_comm_rx_fsm.h"
 
 void rx_comm_test_0(void); // packet information
-void rx_comm_test_1(void); // testing frames 
+void rx_comm_test_1(void); // testing frames
+void tx_comm_test_0(void); // testing tx ack retries
+
 
 
 
