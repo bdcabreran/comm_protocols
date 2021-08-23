@@ -10,6 +10,7 @@
 #include "host_comm_tx_fsm.h"
 #include "host_comm_rx_fsm.h"
 #include "stdio.h"
+#include "tdd.h"
 
 #include "uart_driver.h"
 
@@ -44,20 +45,8 @@ int main(void)
   host_comm_tx_fsm_init(&host_comm_tx_handle);
   host_comm_rx_fsm_init(&host_comm_rx_handle);
 
-  host_comm_tx_fsm_write_dbg_msg(&host_comm_tx_handle, "first debug msg\r\n", true);
-  host_comm_tx_fsm_write_dbg_msg(&host_comm_tx_handle, "second debug msg\r\n", false);
-
-  packet_frame_t packet = 
-  {
-    .preamble = PREAMBLE,
-    .data.header.dir = HOST_TO_TARGET,
-    .data.header.payload_len = 0,
-    .data.header.type.cmd = HOST_TO_TARGET_CMD_GET_FW_VERSION, 
-	.crc = 0xAABBCCDD,
-	.postamble = POSTAMBLE
-  };
-
-  uart_write_rx_data((uint8_t*)&packet, (packet.data.header.payload_len + HEADER_SIZE_BYTES));
+  /* run tdd #0*/
+  rx_comm_test_1();
 
   /* Infinite loop */
   while (1)

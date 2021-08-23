@@ -74,7 +74,7 @@ typedef struct
 
 typedef struct
 {
-    packet_frame_t packet;
+    packet_data_t packet;
 }host_comm_rx_iface_t;
 
 /*! 

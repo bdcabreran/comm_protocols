@@ -185,7 +185,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 /* only for dbg*/
 uint8_t uart_write_rx_data(uint8_t *data, uint8_t len)
 {
-    return circular_buff_write(uart_data.rx.cb, data, len);
+	circular_buff_st_t status = circular_buff_write(uart_data.rx.cb, data, len);
+	if(status != CIRCULAR_BUFF_OK)
+	{
+	    uart_driver_dbg("comm driver error:\t circular buffer cannot write request\r\n");
+	}
+    return status;
 }
 
 

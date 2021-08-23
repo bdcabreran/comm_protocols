@@ -64,7 +64,7 @@ void host_comm_tx_fsm_init(host_comm_tx_fsm_t* handle)
 {
     /*Init interface*/
     host_comm_tx_queue_init();
-    memset((uint8_t*)&handle->iface.request.packet, 0, sizeof(packet_frame_t));
+    memset((uint8_t*)&handle->iface.request.packet, 0, sizeof(packet_data_t));
 
     /*Clear events */
     clear_events(handle);

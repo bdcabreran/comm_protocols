@@ -21,7 +21,7 @@ host_comm_rx_fsm_t host_comm_rx_handle;
 /**@ 'Preamble process' state related functions */
 static void enter_seq_preamble_proc(host_comm_rx_fsm_t *handle);
 static bool preamble_proc_on_react(host_comm_rx_fsm_t *handle, const bool try_transition);
-static void during_action_preamble_proc(host_comm_rx_fsm_t *handle);
+static uint8_t during_action_preamble_proc(host_comm_rx_fsm_t *handle);
 
 /**@ 'Header Process' state related functions */
 static void enter_seq_header_proc(host_comm_rx_fsm_t *handle);
@@ -72,17 +72,33 @@ static void enter_seq_preamble_proc(host_comm_rx_fsm_t *handle)
 	host_comm_rx_fsm_set_next_state(handle, st_comm_rx_preamble_proc);
 }
 
-static void during_action_preamble_proc(host_comm_rx_fsm_t *handle)
+static uint8_t during_action_preamble_proc(host_comm_rx_fsm_t *handle)
 {
 	if (uart_get_rx_data_len() >= PREAMBLE_SIZE_BYTES)
 	{
-		uart_read_rx_data((uint8_t *)&handle->iface.packet.preamble, PREAMBLE_SIZE_BYTES);
-		if (handle->iface.packet.preamble == PREAMBLE)
-		{
-			host_comm_rx_dbg("ev_internal \t[ preamble_ok ]\r\n");
-			handle->event.internal = ev_int_preamble_ok;
-		}
+		uint8_t preamble;
+
+		uart_read_rx_data((uint8_t *)&preamble, 1);
+		if (preamble != protocol_preamble.bit[0])
+			return 0;
+
+		uart_read_rx_data((uint8_t *)&preamble, 1);
+		if (preamble != protocol_preamble.bit[1])
+			return 0;
+
+		uart_read_rx_data((uint8_t *)&preamble, 1);
+		if (preamble != protocol_preamble.bit[2])
+			return 0;
+
+		uart_read_rx_data((uint8_t *)&preamble, 1);
+		if (preamble != protocol_preamble.bit[3])
+			return 0;
+
+		host_comm_rx_dbg("ev_internal \t[ preamble_ok ]\r\n");
+		handle->event.internal = ev_int_preamble_ok;
+		return 1;
 	}
+	return 0;
 }
 
 static bool preamble_proc_on_react(host_comm_rx_fsm_t *handle, const bool try_transition)
@@ -130,20 +146,14 @@ static void exit_action_header_proc(host_comm_rx_fsm_t *handle)
 	time_event_stop(&handle->event.time.header_timeout);
 }
 
-static uint8_t server_packet_check_valid_header(void)
-{
-	/*dummy function*/
-	return 1;
-}
-
 static void during_action_header_proc(host_comm_rx_fsm_t *handle)
 {
 	if (uart_get_rx_data_len() >= HEADER_SIZE_BYTES)
 	{
 		/* 1. Read Header from server buffer */
-		uart_read_rx_data((uint8_t *)&handle->iface.packet.data.header, HEADER_SIZE_BYTES);
+		uart_read_rx_data((uint8_t *)&handle->iface.packet.header, HEADER_SIZE_BYTES);
 
-		if (server_packet_check_valid_header())
+		if (protocol_check_valid_header(&handle->iface.packet))
 		{
 			host_comm_rx_dbg("ev_internal \t[ header_ok ]\r\n");
 			handle->event.internal = ev_int_header_ok;
@@ -169,7 +179,7 @@ static bool header_proc_on_react(host_comm_rx_fsm_t *handle, const bool try_tran
 			exit_action_header_proc(handle);
 
 			/*Choice Enter sequence */
-			if (handle->iface.packet.data.header.payload_len > 0)
+			if (handle->iface.packet.header.payload_len > 0)
 			{
 				host_comm_rx_dbg("guard \t[ payload len > 0 ]\r\n");
 				enter_seq_payload_proc(handle);
@@ -227,7 +237,7 @@ static void enter_seq_payload_proc(host_comm_rx_fsm_t *handle)
 
 static void entry_action_payload_proc(host_comm_rx_fsm_t *handle)
 {
-	uint16_t time_ms = handle->iface.packet.data.header.payload_len * 1;
+	uint16_t time_ms = handle->iface.packet.header.payload_len * 1;
 	time_event_start(&handle->event.time.payload_timeout, time_ms);
 }
 
@@ -238,14 +248,14 @@ static void exit_action_payload_proc(host_comm_rx_fsm_t *handle)
 
 static void during_action_payload_proc(host_comm_rx_fsm_t *handle)
 {
-	uint8_t exp_data_len = handle->iface.packet.data.header.payload_len;
+	uint8_t exp_data_len = handle->iface.packet.header.payload_len;
 
 	if (uart_get_rx_data_len() >= exp_data_len)
 	{
 		host_comm_rx_dbg("ev_internal \t[ payload_ok ]\r\n");
 		handle->event.internal = ev_int_payload_ok;
-		uart_read_rx_data((uint8_t *)&handle->iface.packet.data.payload,
-								   handle->iface.packet.data.header.payload_len);
+		uart_read_rx_data((uint8_t *)&handle->iface.packet.payload,
+								   handle->iface.packet.header.payload_len);
 	}
 }
 
@@ -316,28 +326,30 @@ static void during_action_crc_and_postamble_proc(host_comm_rx_fsm_t *handle)
 
 	if (uart_get_rx_data_len() >= exp_data_len)
 	{
+		uint32_t recv_crc;
+		uint32_t postamble;
 
-		uart_read_rx_data((uint8_t*)&handle->iface.packet.crc, CRC_SIZE_BYTES);
-		uart_read_rx_data((uint8_t*)&handle->iface.packet.postamble, POSTAMBLE_SIZE_BYTES);
+		uart_read_rx_data((uint8_t*)&recv_crc, CRC_SIZE_BYTES);
+		uart_read_rx_data((uint8_t*)&postamble, POSTAMBLE_SIZE_BYTES);
 
-		size_t packet_len = HEADER_SIZE_BYTES + handle->iface.packet.data.header.payload_len;
+		size_t packet_len = HEADER_SIZE_BYTES + handle->iface.packet.header.payload_len;
 		uint32_t crc = 0;
 
-		crc32_accumulate((uint8_t *)&handle->iface.packet.data, packet_len, &crc);
+		crc32_accumulate((uint8_t *)&handle->iface.packet.header, packet_len, &crc);
 
-		if (crc != handle->iface.packet.crc)
+		if (crc != recv_crc)
 		{
 			host_comm_rx_dbg("ev_internal \t[ crc error ]\r\n");
+			host_comm_rx_dbg("expected crc \t[0x%.8X] != recv [0x%.8X]\r\n", crc, recv_crc);
 			handle->event.internal = ev_int_crc_error;
-
-			if (handle->iface.packet.postamble != POSTAMBLE)
+		}
+		else
+		{
+			if (postamble != POSTAMBLE)
 			{
 				host_comm_rx_dbg("ev_internal \t[ postamble error ] \r\n");
 				handle->event.internal = ev_int_postamble_error;
 			}
-		}
-		else
-		{
 			host_comm_rx_dbg("ev_internal \t[ crc and postamble ok ]\r\n");
 			handle->event.internal = ev_int_crc_and_postamble_ok;
 		}
@@ -399,7 +411,7 @@ static bool crc_and_postamble_proc_on_react(host_comm_rx_fsm_t *handle, const bo
 static void enter_seq_packet_ready(host_comm_rx_fsm_t *handle)
 {
 	/*Entry Action*/
-	host_comm_rx_dbg("enter seq \t[ gateway packet ready]\r\n");
+	host_comm_rx_dbg("enter seq \t[ packet ready ]\r\n");
 	host_comm_rx_fsm_set_next_state(handle, st_comm_rx_packet_ready);
 	entry_action_packet_ready(handle);
 }
@@ -439,7 +451,7 @@ static void clear_time_events(host_comm_rx_fsm_t *handle)
 void host_comm_rx_fsm_init(host_comm_rx_fsm_t *handle)
 {
 	/*Init Interface*/
-	memset((uint8_t *)&handle->iface.packet, 0, sizeof(packet_frame_t));
+	memset((uint8_t *)&handle->iface.packet, 0, sizeof(packet_data_t));
 
 	/*Clear events*/
 	clear_time_events(handle);

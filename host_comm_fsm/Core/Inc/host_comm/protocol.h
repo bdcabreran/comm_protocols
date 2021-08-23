@@ -26,19 +26,32 @@
 #define HOST_TO_TARGET_DIR   (0xBB)
 
 /* Packet Format Sizes */
-#define PREAMBLE_SIZE_BYTES     sizeof(uint16_t)
-#define POSTAMBLE_SIZE_BYTES    sizeof(uint16_t)
+#define PREAMBLE_SIZE_BYTES     sizeof(uint32_t)
+#define POSTAMBLE_SIZE_BYTES    sizeof(uint32_t)
 #define HEADER_SIZE_BYTES       sizeof(packet_header_t)
 #define CRC_SIZE_BYTES          sizeof(uint32_t)
 
+/* Packet structure 
+    ------------------------------------------------------------------------------
+   | PREAMBLE : 2B | HEADER : 4B | PAYLOAD : [0 - 256]B | CRC : 4B | POSTAMBLE :4B| 
+    ------------------------------------------------------------------------------
+*/
+
 /* Preamble / Postamble bytes */
-#define PREAMBLE              (0xFF7F)
-#define POSTAMBLE             (0xDEDF)
+#define PREAMBLE              (0xAA55AA55)
+#define POSTAMBLE             (0xBB55BB55)
+
+typedef union
+{
+    uint32_t byte; 
+    uint8_t  bit[4];
+}byte_t;
+
 
 typedef enum
 {
-    HOST_TO_TARGET,
-    TARGET_TO_HOST,
+    HOST_TO_TARGET = HOST_TO_TARGET_DIR,
+    TARGET_TO_HOST = TARGET_TO_HOST_DIR,
 }packet_dir_t;
 
 typedef struct
@@ -68,16 +81,6 @@ typedef struct
 
 }packet_data_t;
 
-typedef struct
-{
-    uint16_t preamble;
-    packet_data_t data;
-    uint32_t crc;
-    uint16_t postamble;
-
-}packet_frame_t;
-
-
 /*##################################################################################################*/
 
 /* Host Header Types */
@@ -89,12 +92,15 @@ typedef enum
     HOST_TO_TARGET_CMD_GET_FW_VERSION,
     HOST_TO_TARGET_CMD_END = CMD_END
 }host_to_target_cmd_t;
+#define IS_HOST_TO_TARGET_CMD(cmd) ((cmd > HOST_TO_TARGET_CMD_START) && (cmd < HOST_TO_TARGET_CMD_END))
 
 typedef enum
 {
     HOST_TO_TARGET_EVT_START = EVT_START,
     HOST_TO_TARGET_EVT_END = EVT_END
 }host_to_target_evt_t;
+#define IS_HOST_TO_TARGET_EVT(evt) ((evt > HOST_TO_TARGET_EVT_START) && (evt < HOST_TO_TARGET_EVT_END))
+
 
 typedef enum
 {
@@ -103,6 +109,8 @@ typedef enum
     HOST_TO_TARGET_RES_NACK,
     HOST_TO_TARGET_RES_END = RES_END
 }host_to_target_resp_t;
+#define IS_HOST_TO_TARGET_RES(res) ((res > HOST_TO_TARGET_RES_START) && (res < HOST_TO_TARGET_RES_END))
+
 
 /*##################################################################################################*/
 
@@ -112,6 +120,8 @@ typedef enum
     TARGET_TO_HOST_CMD_START = CMD_START,
     TARGET_TO_HOST_CMD_END = CMD_END
 }target_to_host_cmd_t;
+#define IS_TARGET_TO_HOST_CMD(cmd) ((cmd > TARGET_TO_HOST_CMD_START) && (cmd < TARGET_TO_HOST_CMD_END))
+
 
 typedef enum
 {
@@ -120,6 +130,8 @@ typedef enum
     TARGET_TO_HOST_EVT_PRINT_DBG_MSG,
     TARGET_TO_HOST_EVT_END = EVT_END
 }target_to_host_evt_t;
+#define IS_TARGET_TO_HOST_EVT(evt) ((evt > TARGET_TO_HOST_EVT_START) && (evt < TARGET_TO_HOST_EVT_END))
+
 
 typedef enum
 {
@@ -131,10 +143,17 @@ typedef enum
     TARGET_TO_HOST_RES_FW_VERSION,
     TARGET_TO_HOST_RES_END = RES_END
 }target_to_host_resp_t;
+#define IS_TARGET_TO_HOST_RES(res) ((res > TARGET_TO_HOST_RES_START) && (res < TARGET_TO_HOST_RES_END))
+
 
 /*##################################################################################################*/
+
+extern const byte_t protocol_preamble;
+extern const byte_t protocol_postamble;
+
 void print_buff_ascii(uint8_t *buff, size_t len);
 void print_buff_hex(uint8_t *buff, size_t len);
+uint8_t protocol_check_valid_header(packet_data_t *packet);
 
 
 #endif
