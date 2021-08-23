@@ -53,6 +53,7 @@ int main(void)
   {
     host_comm_rx_fsm_run(&host_comm_rx_handle);
     host_comm_tx_fsm_run(&host_comm_tx_handle);
+
     heartbeat_handler();
   }
 }

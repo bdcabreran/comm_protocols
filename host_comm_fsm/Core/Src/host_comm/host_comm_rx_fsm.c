@@ -77,19 +77,16 @@ static uint8_t during_action_preamble_proc(host_comm_rx_fsm_t *handle)
 	if (uart_get_rx_data_len() >= PREAMBLE_SIZE_BYTES)
 	{
 		uint8_t preamble;
-
+		/* read byte by byte to prevent data lost */
 		uart_read_rx_data((uint8_t *)&preamble, 1);
 		if (preamble != protocol_preamble.bit[0])
 			return 0;
-
 		uart_read_rx_data((uint8_t *)&preamble, 1);
 		if (preamble != protocol_preamble.bit[1])
 			return 0;
-
 		uart_read_rx_data((uint8_t *)&preamble, 1);
 		if (preamble != protocol_preamble.bit[2])
 			return 0;
-
 		uart_read_rx_data((uint8_t *)&preamble, 1);
 		if (preamble != protocol_preamble.bit[3])
 			return 0;
@@ -120,8 +117,8 @@ static bool preamble_proc_on_react(host_comm_rx_fsm_t *handle, const bool try_tr
 	{
 		/*during action*/
 		during_action_preamble_proc(handle);
-		
 	}
+	
 	return did_transition;
 }
 
