@@ -37,13 +37,13 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  16 .debug_macro  00018df2  00000000  00000000  000398f8  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   00010145  00000000  00000000  000526ea  2**0
+ 17 .debug_line   00010147  00000000  00000000  000526ea  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    00089315  00000000  00000000  0006282f  2**0
+ 18 .debug_str    00089315  00000000  00000000  00062831  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000053  00000000  00000000  000ebb44  2**0
+ 19 .comment      00000053  00000000  00000000  000ebb46  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  00003ca0  00000000  00000000  000ebb98  2**2
+ 20 .debug_frame  00003ca0  00000000  00000000  000ebb9c  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -2624,7 +2624,7 @@ static uint8_t during_action_preamble_proc(host_comm_rx_fsm_t *handle)
  8001720:	d938      	bls.n	8001794 <during_action_preamble_proc+0x84>
 	{
 		uint8_t preamble;
-
+		/* read byte by byte to prevent data lost */
 		uart_read_rx_data((uint8_t *)&preamble, 1);
  8001722:	f107 030f 	add.w	r3, r7, #15
  8001726:	2101      	movs	r1, #1
@@ -2639,7 +2639,6 @@ static uint8_t during_action_preamble_proc(host_comm_rx_fsm_t *handle)
 			return 0;
  8001738:	2300      	movs	r3, #0
  800173a:	e02c      	b.n	8001796 <during_action_preamble_proc+0x86>
-
 		uart_read_rx_data((uint8_t *)&preamble, 1);
  800173c:	f107 030f 	add.w	r3, r7, #15
  8001740:	2101      	movs	r1, #1
@@ -2654,7 +2653,6 @@ static uint8_t during_action_preamble_proc(host_comm_rx_fsm_t *handle)
 			return 0;
  8001752:	2300      	movs	r3, #0
  8001754:	e01f      	b.n	8001796 <during_action_preamble_proc+0x86>
-
 		uart_read_rx_data((uint8_t *)&preamble, 1);
  8001756:	f107 030f 	add.w	r3, r7, #15
  800175a:	2101      	movs	r1, #1
@@ -2669,7 +2667,6 @@ static uint8_t during_action_preamble_proc(host_comm_rx_fsm_t *handle)
 			return 0;
  800176c:	2300      	movs	r3, #0
  800176e:	e012      	b.n	8001796 <during_action_preamble_proc+0x86>
-
 		uart_read_rx_data((uint8_t *)&preamble, 1);
  8001770:	f107 030f 	add.w	r3, r7, #15
  8001774:	2101      	movs	r1, #1
@@ -2752,8 +2749,8 @@ static bool preamble_proc_on_react(host_comm_rx_fsm_t *handle, const bool try_tr
 		during_action_preamble_proc(handle);
  80017da:	6878      	ldr	r0, [r7, #4]
  80017dc:	f7ff ff98 	bl	8001710 <during_action_preamble_proc>
-		
 	}
+	
 	return did_transition;
  80017e0:	7bfb      	ldrb	r3, [r7, #15]
 }
@@ -4600,24 +4597,20 @@ void host_comm_tx_fsm_run(host_comm_tx_fsm_t *handle)
  8002208:	d002      	beq.n	8002210 <host_comm_tx_fsm_run+0x16>
  800220a:	2b02      	cmp	r3, #2
  800220c:	d005      	beq.n	800221a <host_comm_tx_fsm_run+0x20>
-        break;
-    case st_comm_tx_transmit_packet:
-        transmit_packet_on_react(handle, true);
-        break;
-    default:
-        break;
+    {
+    case st_comm_tx_poll_pending_transfer: poll_pending_transfers_on_react(handle, true); break;
+    case st_comm_tx_transmit_packet:       transmit_packet_on_react(handle, true);         break;
+    default: break;
  800220e:	e009      	b.n	8002224 <host_comm_tx_fsm_run+0x2a>
-        poll_pending_transfers_on_react(handle, true);
+    case st_comm_tx_poll_pending_transfer: poll_pending_transfers_on_react(handle, true); break;
  8002210:	2101      	movs	r1, #1
  8002212:	6878      	ldr	r0, [r7, #4]
  8002214:	f7ff fdf5 	bl	8001e02 <poll_pending_transfers_on_react>
-        break;
  8002218:	e004      	b.n	8002224 <host_comm_tx_fsm_run+0x2a>
-        transmit_packet_on_react(handle, true);
+    case st_comm_tx_transmit_packet:       transmit_packet_on_react(handle, true);         break;
  800221a:	2101      	movs	r1, #1
  800221c:	6878      	ldr	r0, [r7, #4]
  800221e:	f7ff fe5d 	bl	8001edc <transmit_packet_on_react>
-        break;
  8002222:	bf00      	nop
     }
 }
@@ -5013,15 +5006,16 @@ int main(void)
   /* Infinite loop */
   while (1)
   {
-    host_comm_rx_fsm_run(&host_comm_rx_handle);
- 8002474:	4805      	ldr	r0, [pc, #20]	; (800248c <main+0x34>)
- 8002476:	f7ff fc1d 	bl	8001cb4 <host_comm_rx_fsm_run>
     host_comm_tx_fsm_run(&host_comm_tx_handle);
- 800247a:	4803      	ldr	r0, [pc, #12]	; (8002488 <main+0x30>)
- 800247c:	f7ff febd 	bl	80021fa <host_comm_tx_fsm_run>
+ 8002474:	4804      	ldr	r0, [pc, #16]	; (8002488 <main+0x30>)
+ 8002476:	f7ff fec0 	bl	80021fa <host_comm_tx_fsm_run>
+    host_comm_rx_fsm_run(&host_comm_rx_handle);
+ 800247a:	4804      	ldr	r0, [pc, #16]	; (800248c <main+0x34>)
+ 800247c:	f7ff fc1a 	bl	8001cb4 <host_comm_rx_fsm_run>
+
     heartbeat_handler();
  8002480:	f000 f806 	bl	8002490 <heartbeat_handler>
-    host_comm_rx_fsm_run(&host_comm_rx_handle);
+    host_comm_tx_fsm_run(&host_comm_tx_handle);
  8002484:	e7f6      	b.n	8002474 <main+0x1c>
  8002486:	bf00      	nop
  8002488:	20000be8 	.word	0x20000be8

@@ -15,4 +15,4 @@ host_comm_tx_fsm.c:264:9:host_comm_tx_fsm_write_dbg_msg	288	static
 host_comm_tx_fsm.c:291:9:host_comm_tx_fsm_send_packet_no_payload	280	static
 host_comm_tx_fsm.c:307:6:host_comm_tx_fsm_time_event_update	24	static
 host_comm_tx_fsm.c:317:6:host_comm_tx_fsm_run	16	static
-host_comm_tx_fsm.c:332:6:host_comm_tx_fsm_set_ext_event	16	static
+host_comm_tx_fsm.c:327:6:host_comm_tx_fsm_set_ext_event	16	static

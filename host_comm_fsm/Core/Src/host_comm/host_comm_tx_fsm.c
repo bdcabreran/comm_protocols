@@ -318,14 +318,9 @@ void host_comm_tx_fsm_run(host_comm_tx_fsm_t *handle)
 {
     switch (handle->state)
     {
-    case st_comm_tx_poll_pending_transfer:
-        poll_pending_transfers_on_react(handle, true);
-        break;
-    case st_comm_tx_transmit_packet:
-        transmit_packet_on_react(handle, true);
-        break;
-    default:
-        break;
+    case st_comm_tx_poll_pending_transfer: poll_pending_transfers_on_react(handle, true); break;
+    case st_comm_tx_transmit_packet:       transmit_packet_on_react(handle, true);         break;
+    default: break;
     }
 }
 
